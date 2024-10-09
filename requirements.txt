@@ -1,0 +1,6 @@
+streamlit#==1.37.1
+pdfplumber
+pillow
+pytesseract
+re
+datetime
