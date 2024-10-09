@@ -1,6 +1,4 @@
-streamlit#==1.37.1
+streamlit
 pdfplumber
 pillow
-pytesseract
-re
 datetime
