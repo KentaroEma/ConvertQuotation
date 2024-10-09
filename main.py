@@ -173,11 +173,11 @@ def main():
 
             # プルダウンメニューで種類を選択（手入力も可能）
             doc_type_options = ['見積書', '納品書', '請求書']
-            selected_doc_type = st.selectbox(
+            st.session_state.doc_type = st.selectbox(
                 "種類 (見積書/納品書/請求書)", doc_type_options, index=doc_type_options.index(st.session_state.doc_type) if st.session_state.doc_type in doc_type_options else 0
             )
-            with st.expander("種類を手入力（オプション）"):
-                st.session_state.doc_type = st.text_input(selected_doc_type)
+            # with st.expander("種類を手入力（オプション）"):
+            #     st.session_state.doc_type = st.text_input(selected_doc_type)
 
             # 会社名と発行日
             st.session_state.company_name = st.text_input("会社名", st.session_state.company_name)
@@ -186,7 +186,7 @@ def main():
             # ユーザーが修正したファイル名を生成
             if st.session_state.doc_type or st.session_state.company_name or st.session_state.issue_date:
                 st.session_state.new_file_name = f"{st.session_state.doc_type}_{st.session_state.company_name}_{st.session_state.issue_date}.pdf"
-                st.write(f"新しいファイル名: {st.session_state.new_file_name}")
+                st.write(f"新しいファイル名: \n{st.session_state.new_file_name}")
 
             # PDFをダウンロードボタン
             if st.session_state.new_file_name:
