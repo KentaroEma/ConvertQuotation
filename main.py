@@ -64,7 +64,7 @@ def extract_info(text):
 # セッション状態の初期化
 def reset_session_state():
     today = datetime.now().strftime("%y%m%d")  # 今日の日付を YYMMDD 形式で取得
-    for key in ['ocr_result', 'doc_type', 'company_name', 'new_file_name']:
+    for key in ['ocr_result', 'doc_type', 'company_name', 'total_amount', 'new_file_name']:
         st.session_state[key] = None if key == 'ocr_result' else ''
     st.session_state['issue_date'] = today  # 発行日の初期値に今日の日付を設定
 
@@ -75,7 +75,7 @@ def process_pdf(file):
         if st.sidebar.button("テキスト抽出"):
             st.session_state.ocr_result = extract_text_from_pdf(file)
             doc_type, company_name, issue_date, total_amount = extract_info(st.session_state.ocr_result)
-            st.session_state.update({'doc_type': doc_type, 'company_name': company_name, 'issue_date': issue_date})
+            st.session_state.update({'doc_type': doc_type, 'company_name': company_name, 'issue_date': issue_date, 'total_amount': total_amount})
 
 # PDFファイルを画面に表示する関数
 def display_pdf(uploaded_file):
@@ -139,6 +139,7 @@ def main():
         # 会社名と発行日
         st.text_input("会社名", st.session_state.company_name)
         st.text_input("発行日 (YYMMDD形式)", st.session_state.issue_date)
+        st.text_input("合計金額", st.session_state.total_amount)
 
     handle_actions(file)
 
