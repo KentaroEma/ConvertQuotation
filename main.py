@@ -6,7 +6,6 @@ import re
 import os
 from datetime import datetime
 from io import BytesIO
-# import config
 
 # .env ファイルを読み込む
 load_dotenv()
@@ -19,8 +18,6 @@ with st.sidebar:
 
 # 文書の種類
 doc_types = ['見積書', '納品書', '請求書']
-
-# my_company_name = config.MY_COMPANY_NAME
 
 # 元号から西暦に変換する関数
 def convert_japanese_era_to_ad(era, year):
