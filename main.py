@@ -77,7 +77,7 @@ def process_pdf(file, my_company_name):
 def display_pdf(uploaded_file):
     if uploaded_file:
         pdf_contents = uploaded_file.read()
-        encoded_pdf = f'<embed src="data:application/pdf;base64,{base64.b64encode(pdf_contents).decode()}" width="100%" height="800px" type="application/pdf">'
+        encoded_pdf = f'<embed src="data:application/pdf;base64,{base64.b64encode(pdf_contents).decode()}" width="100%" height="100%" type="application/pdf">'
         st.markdown(encoded_pdf, unsafe_allow_html=True)
 
 # ファイル名生成、ダウンロード、リセットを行う関数
