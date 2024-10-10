@@ -69,7 +69,7 @@ def extract_info(text, my_company_name):
     company_matches_1 = re.findall(r'(.*?)(株式会社|[(]株[)]|合同会社|合資会社|合名会社|法人)', text)
     company_matches_2 = re.findall(r'(株式会社|[(]株[)]|合同会社|合資会社|合名会社|法人)\s*(\S+)', text)
 
-    st.write(company_matches_1, company_matches_2)
+    # st.write(company_matches_1, company_matches_2)
     company_name = None
     for match in company_matches_1:
         company = re.sub(r'(株式会社|[(]株[)]|合同会社|合資会社|合名会社|法人)', '', match[0]).strip()
