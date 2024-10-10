@@ -1,8 +1,9 @@
 import streamlit as st
 import pdfplumber
+import fitz  # PyMuPDF
 import re
 from datetime import datetime
-import base64
+from io import BytesIO
 
 # 文書の種類
 doc_types = ['見積書', '納品書', '請求書']
@@ -22,6 +23,19 @@ def convert_japanese_era_to_ad(era, year):
 def extract_text_from_pdf(pdf):
     with pdfplumber.open(pdf) as pdf_file:
         return ''.join([page.extract_text() for page in pdf_file.pages])
+
+# PDFを画像に変換して表示する関数
+def display_pdf_as_images(pdf):
+    doc = fitz.open(stream=pdf.read(), filetype="pdf")
+    page_images = []
+    for page_num in range(doc.page_count):
+        page = doc.load_page(page_num)
+        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 解像度を上げるためにスケールを設定
+        img_data = BytesIO(pix.tobytes("png"))
+        page_images.append(img_data)
+
+    for i, img in enumerate(page_images):
+        st.image(img, caption=f"Page {i+1}")
 
 # 日付を抽出して西暦に変換する関数
 def extract_and_convert_date(text):
@@ -67,18 +81,11 @@ def reset_session_state():
 # メインのPDFアップロード、OCR処理を行う関数
 def process_pdf(file, my_company_name):
     if file:
-        display_pdf(file)
+        display_pdf_as_images(file)
         if st.sidebar.button("テキスト抽出"):
             st.session_state.ocr_result = extract_text_from_pdf(file)
             doc_type, company_name, issue_date, total_amount = extract_info(st.session_state.ocr_result, my_company_name)
             st.session_state.update({'doc_type': doc_type, 'company_name': company_name, 'issue_date': issue_date, 'total_amount': total_amount})
-
-# PDFファイルを画面に表示する関数
-def display_pdf(uploaded_file):
-    if uploaded_file:
-        pdf_contents = uploaded_file.read()
-        encoded_pdf = f'<embed src="data:application/pdf;base64,{base64.b64encode(pdf_contents).decode()}" width="100%" height="100%" type="application/pdf">'
-        st.markdown(encoded_pdf, unsafe_allow_html=True)
 
 # ファイル名生成、ダウンロード、リセットを行う関数
 def handle_actions(file):
@@ -94,9 +101,9 @@ def handle_actions(file):
                 mime="application/pdf"
             )
 
-    # リセットボタン
-    if st.sidebar.button("入力内容クリア"):
-        reset_session_state()
+        # リセットボタン
+        if st.sidebar.button("入力内容クリア"):
+            reset_session_state()
 
 # メイン関数
 def main():
@@ -119,7 +126,7 @@ def main():
 
     with st.sidebar:
         # 自分の会社名を入力
-        my_company_name = st.text_input("自社名:", "")
+        my_company_name = st.text_input("自社名", "")
 
     process_pdf(file, my_company_name)
 
@@ -134,12 +141,12 @@ def main():
         selected_doc_type = st.selectbox(
             "種類を選択", doc_type_options, index=doc_type_options.index(st.session_state.doc_type) if st.session_state.doc_type in doc_type_options else 0
         )
-        st.session_state.doc_type = st.text_input("種類を手入力(オプション):", selected_doc_type)
+        st.session_state.doc_type = st.text_input("種類を手入力(オプション)", selected_doc_type)
 
         # 会社名と発行日
-        st.text_input("会社名:", st.session_state.company_name)
-        st.text_input("発行日(YYMMDD形式):", st.session_state.issue_date)
-        st.text_input("合計金額:", st.session_state.total_amount)
+        st.text_input("会社名", st.session_state.company_name)
+        st.text_input("発行日(YYMMDD形式)", st.session_state.issue_date)
+        # st.text_input("合計金額", st.session_state.total_amount)
 
     handle_actions(file)
 
