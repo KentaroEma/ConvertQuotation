@@ -1,10 +1,18 @@
 import streamlit as st
+from dotenv import load_dotenv
 import pdfplumber
 import fitz  # PyMuPDF
 import re
+import os
 from datetime import datetime
 from io import BytesIO
 import config
+
+# .env ファイルを読み込む
+load_dotenv()
+
+# APIキーを環境変数から取得
+my_company_name = os.getenv("MY_COMPANY_NAME")
 
 # 文書の種類
 doc_types = ['見積書', '納品書', '請求書']
