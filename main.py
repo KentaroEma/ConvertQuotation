@@ -138,7 +138,7 @@ def main():
 
         # 会社名と発行日
         st.text_input("会社名:", st.session_state.company_name)
-        st.text_input("発行日 (YYMMDD形式):", st.session_state.issue_date)
+        st.text_input("発行日(YYMMDD形式):", st.session_state.issue_date)
         st.text_input("合計金額:", st.session_state.total_amount)
 
     handle_actions(file)
