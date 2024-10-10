@@ -56,7 +56,7 @@ def extract_info(text):
         company_name = "会社名が認識できませんでした。"  # 会社名が見つからない場合
     
     issue_date = extract_and_convert_date(text)
-    total_amount_match = re.search(r'合計金額.*?(\d{1,3}(,\d{3})*)円', text)
+    total_amount_match = re.search(r'合計.*?(\d{1,3}(,\d{3})*)円', text)
     total_amount = total_amount_match.group(1) if total_amount_match else ''
     
     return doc_type, company_name, issue_date, total_amount
@@ -72,7 +72,7 @@ def reset_session_state():
 def process_pdf(file):
     if file:
         display_pdf(file)
-        if st.sidebar.button("OCRを実行"):
+        if st.sidebar.button("テキスト抽出"):
             st.session_state.ocr_result = extract_text_from_pdf(file)
             doc_type, company_name, issue_date, total_amount = extract_info(st.session_state.ocr_result)
             st.session_state.update({'doc_type': doc_type, 'company_name': company_name, 'issue_date': issue_date})
