@@ -50,7 +50,7 @@ def display_pdf_as_images(pdf):
 
 # 日付を抽出して西暦に変換する関数
 def extract_and_convert_date(text):
-    date_match = re.search(r'(\d{4})[年/-](\d{1,2})[月/-](\d{1,2})[日]?', text)
+    date_match = re.search(r'(\d{4})[年/](\d{1,2})[月/](\d{1,2})[日]?', text)
     if date_match:
         return f'{date_match.group(1)[-2:]}{date_match.group(2).zfill(2)}{date_match.group(3).zfill(2)}'
     
