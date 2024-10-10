@@ -14,6 +14,9 @@ load_dotenv()
 # APIキーを環境変数から取得
 my_company_name = os.getenv("MY_COMPANY_NAME")
 
+with st.sidebar:
+    st.write(f"自社名: {my_company_name}")
+
 # 文書の種類
 doc_types = ['見積書', '納品書', '請求書']
 
@@ -70,7 +73,7 @@ def extract_info(text, my_company_name):
     company_name = None
     for match in company_matches:
         company = re.sub(r'(株式会社|[(]株[)]|合同会社|合資会社|合名会社|法人)', '', match[0]).strip()
-        if my_company_name not in company:
+        if my_company_name != company:
             company_name = company
             break
     if not company_name:
