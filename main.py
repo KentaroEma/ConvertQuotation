@@ -1,13 +1,15 @@
 import streamlit as st
 import pdfplumber
-from PIL import Image
-import pytesseract
 import re
 from datetime import datetime
 import base64
 
-# Tesseractのパスを設定
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  # 環境に合わせて設定
+
+# 自分の会社名
+my_company_name = "ノベルクリスタルテクノロジー"
+
+# 文書の種類
+doc_types = ['見積書', '納品書', '請求書']
 
 # 元号から西暦に変換する関数
 def convert_japanese_era_to_ad(era, year):
@@ -18,184 +20,126 @@ def convert_japanese_era_to_ad(era, year):
         '大正': 1912,
         '明治': 1868
     }
-    if era in eras:
-        return eras[era] + year - 1  # 元年は1年引く
-    return None
+    return eras.get(era, None) + year - 1 if era in eras else None
 
-# OCRで画像からテキストを抽出する関数
-def extract_text_from_image(image):
-    text = pytesseract.image_to_string(image, lang='jpn')
-    return text
-
-# PDFからテキストを抽出する関数
+# テキストからPDFを抽出する関数
 def extract_text_from_pdf(pdf):
-    text = ''
     with pdfplumber.open(pdf) as pdf_file:
-        for page in pdf_file.pages:
-            text += page.extract_text()
-    return text
+        return ''.join([page.extract_text() for page in pdf_file.pages])
 
-# 元号も含めて日付を抽出して西暦に変換する関数
+# 日付を抽出して西暦に変換する関数
 def extract_and_convert_date(text):
-    # 西暦日付フォーマット (例: 2024年10月9日、2024/10/09、2024-10-09)
     date_match = re.search(r'(\d{4})[年/-](\d{1,2})[月/-](\d{1,2})[日]?', text)
     if date_match:
-        year, month, day = date_match.groups()
-        return f'{year[-2:]}{month.zfill(2)}{day.zfill(2)}'
+        return f'{date_match.group(1)[-2:]}{date_match.group(2).zfill(2)}{date_match.group(3).zfill(2)}'
     
-    # 元号日付フォーマット (例: 令和2年10月9日、平成30年10月9日)
     era_date_match = re.search(r'(令和|平成|昭和|大正|明治)(\d{1,2})年(\d{1,2})月(\d{1,2})日', text)
     if era_date_match:
-        era, year, month, day = era_date_match.groups()
-        year = int(year)
-        month = int(month)
-        day = int(day)
-        ad_year = convert_japanese_era_to_ad(era, year)
-        if ad_year:
-            return f'{str(ad_year)[-2:]}{str(month).zfill(2)}{str(day).zfill(2)}'
+        ad_year = convert_japanese_era_to_ad(era_date_match.group(1), int(era_date_match.group(2)))
+        return f'{str(ad_year)[-2:]}{era_date_match.group(3).zfill(2)}{era_date_match.group(4).zfill(2)}' if ad_year else ''
     
     return ''
 
 # 種類、会社名、発行日、合計金額を抽出する関数
 def extract_info(text):
-    doc_type = ''
-    company_name = ''
-    issue_date_formatted = ''  # デフォルトで空文字列をセット
-    total_amount = ''
+    doc_type = next((dt for dt in doc_types if re.search(f'{dt[:1]}\s*{dt[1]}', text)), '')
 
-    # 文書の種類を判定 (見積書、納品書、請求書にスペース対応)
-    if re.search(r'見\s*積\s*書', text):
-        doc_type = '見積書'
-    elif re.search(r'納\s*品\s*書', text):
-        doc_type = '納品書'
-    elif re.search(r'請\s*求\s*書', text):
-        doc_type = '請求書'
-
-    # 発行日を抽出
-    issue_date_formatted = extract_and_convert_date(text)
-
-    # 合計金額を抽出（例: 100,000円）
-    total_match = re.search(r'合計金額.*?(\d{1,3}(,\d{3})*)円', text)
-    if total_match:
-        total_amount = total_match.group(1)
-
-    # 会社名を抽出（「株式会社〇〇」「〇〇株式会社」「(株)〇〇」などに対応）
+    # 会社名を探し、自分の会社名をスキップ
     company_matches = re.findall(r'(.*?)(株式会社|[(]株[)]|法人)', text)
-    
-    # 自分の会社名を省略
-    my_company_name = "ノベルクリスタルテクノロジー"
-    
-    # 自分の会社名以外の会社名を選ぶ
+    company_name = None
     for match in company_matches:
-        # matchが文字列かを確認してから処理する
-        if match and isinstance(match[0], str):
-            if my_company_name not in match[0]:
-                # 「株式会社」「(株)」を取り除く
-                company_name = re.sub(r'(株式会社|[(]株[)]|法人)', '', match[0]).strip()
-                break
-    else:
+        company = re.sub(r'(株式会社|[(]株[)]|法人)', '', match[0]).strip()
+        if my_company_name not in company:
+            company_name = company
+            break
+    if not company_name:
         company_name = "会社名が認識できませんでした。"  # 会社名が見つからない場合
+    
+    issue_date = extract_and_convert_date(text)
+    total_amount_match = re.search(r'合計金額.*?(\d{1,3}(,\d{3})*)円', text)
+    total_amount = total_amount_match.group(1) if total_amount_match else ''
+    
+    return doc_type, company_name, issue_date, total_amount
 
-    return doc_type, company_name, issue_date_formatted, total_amount
+# セッション状態の初期化
+def reset_session_state():
+    today = datetime.now().strftime("%y%m%d")  # 今日の日付を YYMMDD 形式で取得
+    for key in ['ocr_result', 'doc_type', 'company_name', 'new_file_name']:
+        st.session_state[key] = None if key == 'ocr_result' else ''
+    st.session_state['issue_date'] = today  # 発行日の初期値に今日の日付を設定
 
-# PDFをサイドバーにアップロードする関数
-def upload_pdf_file():
-    uploaded_file = st.sidebar.file_uploader("Upload PDF file", type="pdf")
-    if uploaded_file is None:
-        st.sidebar.write("Please upload a PDF file.")
-    return uploaded_file
+# メインのPDFアップロード、OCR処理を行う関数
+def process_pdf(file):
+    if file:
+        display_pdf(file)
+        if st.sidebar.button("OCRを実行"):
+            st.session_state.ocr_result = extract_text_from_pdf(file)
+            doc_type, company_name, issue_date, total_amount = extract_info(st.session_state.ocr_result)
+            st.session_state.update({'doc_type': doc_type, 'company_name': company_name, 'issue_date': issue_date})
 
 # PDFファイルを画面に表示する関数
 def display_pdf(uploaded_file):
-    if uploaded_file is not None:
+    if uploaded_file:
         pdf_contents = uploaded_file.read()
-        pdf_base64 = base64.b64encode(pdf_contents).decode('utf-8')
-
-        # PDFを埋め込むためのHTMLタグ
-        encoded_pdf = f'<embed id="pdf_viewer" src="data:application/pdf;base64,{pdf_base64}" width="100%" height="600px" type="application/pdf">'
-
-        # PDFの埋め込みを表示
+        encoded_pdf = f'<embed src="data:application/pdf;base64,{base64.b64encode(pdf_contents).decode()}" width="100%" height="800px" type="application/pdf">'
         st.markdown(encoded_pdf, unsafe_allow_html=True)
-    else:
-        st.write("No PDF file uploaded.")
 
-# main関数
+# ファイル名生成、ダウンロード、リセットを行う関数
+def handle_actions(file):
+    with st.sidebar:
+        # ファイル名生成
+        if all([st.session_state.doc_type, st.session_state.company_name, st.session_state.issue_date]):
+            st.session_state.new_file_name = f"{st.session_state.doc_type}_{st.session_state.company_name}_{st.session_state.issue_date}.pdf"
+            st.write(f"新しいファイル名: {st.session_state.new_file_name}")
+            st.download_button(
+                label="新しいファイル名でダウンロード",
+                data=file.getvalue(),
+                file_name=st.session_state.new_file_name,
+                mime="application/pdf"
+            )
+
+        # リセットボタン
+        if st.sidebar.button("入力内容をリセットする"):
+            reset_session_state()
+
+# メイン関数
 def main():
-    # CSSを使って全画面表示にする
     st.markdown(
         """
         <style>
-        .css-18e3th9 {padding: 0;}   /* ヘッダーのパディングをゼロに */
-        .css-1d391kg {padding: 0;}   /* ページのパディングをゼロに */
-        .main .block-container {padding: 0;margin: 0;width: 100vw;height: 100vh;max-width: 100vw;}  /* メインコンテナの幅と高さを100%に */
-        iframe {position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; border: none;} /* iframeを全画面表示 */
+        .css-18e3th9 {padding: 0;}
+        .css-1d391kg {padding: 0;}
+        .main .block-container {padding: 0;margin: 0;width: 100vw;height: 100vh;max-width: 100vw;}
+        iframe {position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; border: none;}
         </style>
-        """,
-        unsafe_allow_html=True
+        """, unsafe_allow_html=True
     )
+    
+    file = st.sidebar.file_uploader("Upload PDF file", type="pdf")
 
-    # サイドバーにアップロードのUIを設置
-    file = upload_pdf_file()
+    # 初期化処理
+    if 'ocr_result' not in st.session_state:
+        reset_session_state()
 
-    # PDFのプレビューをメイン画面に表示
-    if file is not None:
-        display_pdf(file)
+    process_pdf(file)
 
-        # サイドバーにOCRとファイル保存の機能を追加
-        with st.sidebar:
-            st.write("OCRとファイル名の変更")
-
-            # OCR結果を保持するためのセッション変数
-            if 'ocr_result' not in st.session_state:
-                st.session_state.ocr_result = None
-                st.session_state.doc_type = ''
-                st.session_state.company_name = ''
-                st.session_state.issue_date = ''
-                st.session_state.new_file_name = None
-
-            # OCR実行ボタン
-            if st.button("OCRを実行"):
-                # PDFからテキスト抽出
-                extracted_text = extract_text_from_pdf(file)
-                st.session_state.ocr_result = extracted_text
-
-                # 情報抽出
-                doc_type, company_name, issue_date, total_amount = extract_info(st.session_state.ocr_result)
-
-                # 抽出結果をセッションに保存
-                st.session_state.doc_type = doc_type
-                st.session_state.company_name = company_name
-                st.session_state.issue_date = issue_date
-
-            # 抽出結果をエクスパンダーで表示（通常は非表示）
+    with st.sidebar:
+        # PDFから抽出したテキストをエクスパンダーで表示
+        if st.session_state.ocr_result:
             with st.expander("抽出されたテキストを表示"):
                 st.write(st.session_state.ocr_result)
 
-            # プルダウンメニューで種類を選択（手入力も可能）
-            doc_type_options = ['見積書', '納品書', '請求書']
-            st.session_state.doc_type = st.selectbox(
-                "種類 (見積書/納品書/請求書)", doc_type_options, index=doc_type_options.index(st.session_state.doc_type) if st.session_state.doc_type in doc_type_options else 0
-            )
-            # with st.expander("種類を手入力（オプション）"):
-            #     st.session_state.doc_type = st.text_input(selected_doc_type)
+        # プルダウン形式で種類を選択
+        doc_type_options = ['見積書', '納品書', '請求書', 'その他']
+        selected_doc_type = st.selectbox(
+            "種類を選択", doc_type_options, index=doc_type_options.index(st.session_state.doc_type) if st.session_state.doc_type in doc_type_options else 0
+        )
+        st.session_state.doc_type = st.text_input("種類を手入力（オプション）", selected_doc_type)
 
-            # 会社名と発行日
-            st.session_state.company_name = st.text_input("会社名", st.session_state.company_name)
-            st.session_state.issue_date = st.text_input("発行日 (YYMMDD形式)", st.session_state.issue_date)
+        # 会社名と発行日
+        st.text_input("会社名", st.session_state.company_name)
+        st.text_input("発行日 (YYMMDD形式)", st.session_state.issue_date)
 
-            # ユーザーが修正したファイル名を生成
-            if st.session_state.doc_type or st.session_state.company_name or st.session_state.issue_date:
-                st.session_state.new_file_name = f"{st.session_state.doc_type}_{st.session_state.company_name}_{st.session_state.issue_date}.pdf"
-                st.write(f"新しいファイル名: \n{st.session_state.new_file_name}")
-
-            # PDFをダウンロードボタン
-            if st.session_state.new_file_name:
-                # 新しいファイル名を指定してPDFをダウンロード
-                st.download_button(
-                    label="新しいファイル名でダウンロード",
-                    data=file.getvalue(),
-                    file_name=st.session_state.new_file_name,
-                    mime="application/pdf"
-                )
+    handle_actions(file)
 
 main()
