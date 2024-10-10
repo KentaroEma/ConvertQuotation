@@ -112,7 +112,7 @@ def main():
         <style>
         .css-18e3th9 {padding: 0;}
         .css-1d391kg {padding: 0;}
-        .main .block-container {padding: 0;margin: 0;width: 100vw;height: 100vh;max-width: 100vw;}
+        .main .block-container {padding: 0;margin: 0;width: 100vw;height: 100vh;max-width: 120vw;}
         iframe {position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; border: none;}
         </style>
         """, unsafe_allow_html=True
@@ -127,6 +127,7 @@ def main():
     with st.sidebar:
         # 自分の会社名を入力
         my_company_name = st.text_input("自社名", "")
+        st.session_state.company_name = my_company_name  # 入力した会社名をセッションに保存
 
     process_pdf(file, my_company_name)
 
