@@ -166,3 +166,6 @@ cython_debug/
 
 # Virtual environment
 myenv/
+
+# Configuration file
+.config.py
