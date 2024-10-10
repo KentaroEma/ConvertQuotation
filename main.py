@@ -55,10 +55,10 @@ def extract_info(text, my_company_name):
     doc_type = next((dt for dt in doc_types if re.search(f'{dt[:1]}\s*{dt[1]}', text)), '')
 
     # 会社名を探し、自分の会社名をスキップ
-    company_matches = re.findall(r'(.*?)(株式会社|[(]株[)]|法人)', text)
+    company_matches = re.findall(r'(.*?)(株式会社|[(]株[)]|合同会社|合資会社|合名会社|法人)', text)
     company_name = None
     for match in company_matches:
-        company = re.sub(r'(株式会社|[(]株[)]|法人)', '', match[0]).strip()
+        company = re.sub(r'(株式会社|[(]株[)]|合同会社|合資会社|合名会社|法人)', '', match[0]).strip()
         if my_company_name not in company:
             company_name = company
             break
