@@ -4,10 +4,6 @@ import re
 from datetime import datetime
 import base64
 
-
-# 自分の会社名
-my_company_name = "ノベルクリスタルテクノロジー"
-
 # 文書の種類
 doc_types = ['見積書', '納品書', '請求書']
 
@@ -41,7 +37,7 @@ def extract_and_convert_date(text):
     return ''
 
 # 種類、会社名、発行日、合計金額を抽出する関数
-def extract_info(text):
+def extract_info(text, my_company_name):
     doc_type = next((dt for dt in doc_types if re.search(f'{dt[:1]}\s*{dt[1]}', text)), '')
 
     # 会社名を探し、自分の会社名をスキップ
@@ -69,12 +65,12 @@ def reset_session_state():
     st.session_state['issue_date'] = today  # 発行日の初期値に今日の日付を設定
 
 # メインのPDFアップロード、OCR処理を行う関数
-def process_pdf(file):
+def process_pdf(file, my_company_name):
     if file:
         display_pdf(file)
         if st.sidebar.button("テキスト抽出"):
             st.session_state.ocr_result = extract_text_from_pdf(file)
-            doc_type, company_name, issue_date, total_amount = extract_info(st.session_state.ocr_result)
+            doc_type, company_name, issue_date, total_amount = extract_info(st.session_state.ocr_result, my_company_name)
             st.session_state.update({'doc_type': doc_type, 'company_name': company_name, 'issue_date': issue_date, 'total_amount': total_amount})
 
 # PDFファイルを画面に表示する関数
@@ -98,9 +94,9 @@ def handle_actions(file):
                 mime="application/pdf"
             )
 
-        # リセットボタン
-        if st.sidebar.button("入力内容をリセットする"):
-            reset_session_state()
+    # リセットボタン
+    if st.sidebar.button("入力内容クリア"):
+        reset_session_state()
 
 # メイン関数
 def main():
@@ -121,7 +117,11 @@ def main():
     if 'ocr_result' not in st.session_state:
         reset_session_state()
 
-    process_pdf(file)
+    with st.sidebar:
+        # 自分の会社名を入力
+        my_company_name = st.text_input("自社名:", "")
+
+    process_pdf(file, my_company_name)
 
     with st.sidebar:
         # PDFから抽出したテキストをエクスパンダーで表示
@@ -134,12 +134,12 @@ def main():
         selected_doc_type = st.selectbox(
             "種類を選択", doc_type_options, index=doc_type_options.index(st.session_state.doc_type) if st.session_state.doc_type in doc_type_options else 0
         )
-        st.session_state.doc_type = st.text_input("種類を手入力（オプション）", selected_doc_type)
+        st.session_state.doc_type = st.text_input("種類を手入力(オプション):", selected_doc_type)
 
         # 会社名と発行日
-        st.text_input("会社名", st.session_state.company_name)
-        st.text_input("発行日 (YYMMDD形式)", st.session_state.issue_date)
-        st.text_input("合計金額", st.session_state.total_amount)
+        st.text_input("会社名:", st.session_state.company_name)
+        st.text_input("発行日 (YYMMDD形式):", st.session_state.issue_date)
+        st.text_input("合計金額:", st.session_state.total_amount)
 
     handle_actions(file)
 
