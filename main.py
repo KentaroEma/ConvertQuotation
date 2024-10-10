@@ -4,7 +4,7 @@ import fitz  # PyMuPDF
 import re
 from datetime import datetime
 from io import BytesIO
-import config
+import config.config as config
 
 # 文書の種類
 doc_types = ['見積書', '納品書', '請求書']

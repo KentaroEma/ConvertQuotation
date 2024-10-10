@@ -168,4 +168,4 @@ cython_debug/
 myenv/
 
 # Configuration file
-.config.py
+.config/
