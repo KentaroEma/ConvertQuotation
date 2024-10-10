@@ -14,7 +14,7 @@ load_dotenv()
 my_company_name = os.getenv("MY_COMPANY_NAME")
 
 with st.sidebar:
-    st.write(f"自社名: {my_company_name}")
+    st.write(f"会社名: {my_company_name}")
 
 # 文書の種類
 doc_types = ['見積書', '納品書', '請求書']
@@ -66,10 +66,18 @@ def extract_info(text, my_company_name):
     doc_type = next((dt for dt in doc_types if re.search(f'{dt[:1]}\s*{dt[1]}', text)), '')
 
     # 会社名を探し、自分の会社名をスキップ
-    company_matches = re.findall(r'(.*?)(株式会社|[(]株[)]|合同会社|合資会社|合名会社|法人)', text)
+    company_matches_1 = re.findall(r'(.*?)(株式会社|[(]株[)]|合同会社|合資会社|合名会社|法人)', text)
+    company_matches_2 = re.findall(r'(株式会社|[(]株[)]|合同会社|合資会社|合名会社|法人)\s*(\S+)', text)
+
+    st.write(company_matches_1, company_matches_2)
     company_name = None
-    for match in company_matches:
+    for match in company_matches_1:
         company = re.sub(r'(株式会社|[(]株[)]|合同会社|合資会社|合名会社|法人)', '', match[0]).strip()
+        if my_company_name != company:
+            company_name = company
+            break
+    for match in company_matches_2:
+        company = re.sub(r'(株式会社|[(]株[)]|合同会社|合資会社|合名会社|法人)', '', match[1]).strip()
         if my_company_name != company:
             company_name = company
             break
@@ -103,6 +111,7 @@ def handle_actions(file):
     with st.sidebar:
         # ファイル名生成
         if all([st.session_state.doc_type, st.session_state.company_name, st.session_state.issue_date]):
+            # 手入力された内容でファイル名を生成
             st.session_state.new_file_name = f"{st.session_state.doc_type}_{st.session_state.company_name}_{st.session_state.issue_date}.pdf"
             st.write(f"新しいファイル名: {st.session_state.new_file_name}")
             st.download_button(
@@ -129,16 +138,11 @@ def main():
         """, unsafe_allow_html=True
     )
     
-    file = st.sidebar.file_uploader("Upload PDF file", type="pdf")
+    file = st.sidebar.file_uploader("PDFファイルをアップロード", type="pdf")
 
     # 初期化処理
     if 'ocr_result' not in st.session_state:
         reset_session_state()
-
-    # with st.sidebar:
-        # 自分の会社名を入力
-        # my_company_name = st.text_input("自社名", "")
-        # st.session_state.company_name = my_company_name  # 入力した会社名をセッションに保存
 
     process_pdf(file, my_company_name)
 
@@ -156,9 +160,9 @@ def main():
         st.session_state.doc_type = st.text_input("種類を手入力(オプション)", selected_doc_type)
 
         # 会社名と発行日
-        st.text_input("会社名", st.session_state.company_name)
-        st.text_input("発行日(YYMMDD形式)", st.session_state.issue_date)
-        # st.text_input("合計金額", st.session_state.total_amount)
+        st.session_state.company_name = st.text_input("取引先", st.session_state.company_name, key="company_name_input")
+        st.session_state.issue_date = st.text_input("発行日(YYMMDD形式)", st.session_state.issue_date, key="issue_date_input")
+        # st.session_state.total_amount = st.text_input("合計金額", st.session_state.total_amount, key="total_amount_input")
 
     handle_actions(file)
 
