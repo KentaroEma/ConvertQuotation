@@ -4,9 +4,12 @@ import fitz  # PyMuPDF
 import re
 from datetime import datetime
 from io import BytesIO
+import config
 
 # 文書の種類
 doc_types = ['見積書', '納品書', '請求書']
+
+my_company_name = config.my_company_name
 
 # 元号から西暦に変換する関数
 def convert_japanese_era_to_ad(era, year):
@@ -124,9 +127,9 @@ def main():
     if 'ocr_result' not in st.session_state:
         reset_session_state()
 
-    with st.sidebar:
+    # with st.sidebar:
         # 自分の会社名を入力
-        my_company_name = st.text_input("自社名", "")
+        # my_company_name = st.text_input("自社名", "")
         # st.session_state.company_name = my_company_name  # 入力した会社名をセッションに保存
 
     process_pdf(file, my_company_name)
