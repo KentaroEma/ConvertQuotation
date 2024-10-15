@@ -1,6 +1,6 @@
-python-dotenv
-streamlit
-pdfplumber
+python-dotenv==1.0.1
+streamlit==1.39.1
+pdfplumber==0.11.4
 datetime
-pymupdf
-pandas
+pymupdf==1.24.11
+pandas==2.2.3
