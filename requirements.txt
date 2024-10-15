@@ -1,5 +1,5 @@
 python-dotenv==1.0.1
-streamlit==1.39.1
+streamlit==1.39.0
 pdfplumber==0.11.4
 datetime
 pymupdf==1.24.11
