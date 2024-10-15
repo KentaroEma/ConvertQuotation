@@ -7,6 +7,19 @@ import os
 from datetime import datetime
 from io import BytesIO
 
+# ページのレイアウト設定
+st.set_page_config(
+    page_title="Convert Quotaion PDF",
+    page_icon="🧊",
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': 'https://www.extremelycoolapp.com/help',
+        'Report a bug': "https://www.extremelycoolapp.com/bug",
+        'About': "# This is a header."
+    }
+)
+
 # .env ファイルを読み込む
 load_dotenv()
 
@@ -70,7 +83,7 @@ def extract_info(text, my_company_name):
     company_matches_2 = re.findall(r'(株式会社|[(]株[)]|合同会社|合資会社|合名会社|法人)\s*(\S+)', text)
 
     # st.write(company_matches_1, company_matches_2)
-    company_name = None
+    company_name = ""
     for match in company_matches_1:
         company = re.sub(r'(株式会社|[(]株[)]|合同会社|合資会社|合名会社|法人)', '', match[0]).strip()
         if my_company_name != company:
@@ -81,7 +94,7 @@ def extract_info(text, my_company_name):
         if my_company_name != company:
             company_name = company
             break
-    if not company_name:
+    if company_name=="":
         company_name = "会社名が認識できませんでした。"  # 会社名が見つからない場合
     
     issue_date = extract_and_convert_date(text)
@@ -121,22 +134,18 @@ def handle_actions(file):
                 mime="application/pdf"
             )
 
-        # リセットボタン
-        if st.sidebar.button("入力内容クリア"):
-            reset_session_state()
-
 # メイン関数
 def main():
-    st.markdown(
-        """
-        <style>
-        .css-18e3th9 {padding: 0;}
-        .css-1d391kg {padding: 0;}
-        .main .block-container {padding: 0;margin: 0;width: 100vw;height: 100vh;max-width: 120vw;}
-        iframe {position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; border: none;}
-        </style>
-        """, unsafe_allow_html=True
-    )
+    # st.markdown(
+    #     """
+    #     <style>
+    #     .css-18e3th9 {padding: 0;}
+    #     .css-1d391kg {padding: 0;}
+    #     .main .block-container {padding: 0;margin: 0;width: 100vw;height: 100vh;max-width: 120vw;}
+    #     iframe {position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; border: none;}
+    #     </style>
+    #     """, unsafe_allow_html=True
+    # )
     
     file = st.sidebar.file_uploader("PDFファイルをアップロード", type="pdf")
 
@@ -165,5 +174,9 @@ def main():
         # st.session_state.total_amount = st.text_input("合計金額", st.session_state.total_amount, key="total_amount_input")
 
     handle_actions(file)
+
+    # リセットボタン
+    if st.sidebar.button("入力内容クリア"):
+        reset_session_state()
 
 main()
