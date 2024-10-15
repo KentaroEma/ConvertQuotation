@@ -3,3 +3,4 @@ streamlit
 pdfplumber
 datetime
 pymupdf
+pandas
