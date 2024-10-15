@@ -114,7 +114,7 @@ def reset_session_state():
 def process_pdf(file, my_company_name):
     if file:
         display_pdf_as_images(file)
-        if st.sidebar.button("テキスト抽出"):
+        if st.sidebar.button("テキスト抽出", key="extract_text_button"):
             st.session_state.ocr_result = extract_text_from_pdf(file)
             doc_type, company_name, issue_date, total_amount = extract_info(st.session_state.ocr_result, my_company_name)
             st.session_state.update({'doc_type': doc_type, 'company_name': company_name, 'issue_date': issue_date, 'total_amount': total_amount})
@@ -136,47 +136,45 @@ def handle_actions(file):
 
 # メイン関数
 def main():
-    # st.markdown(
-    #     """
-    #     <style>
-    #     .css-18e3th9 {padding: 0;}
-    #     .css-1d391kg {padding: 0;}
-    #     .main .block-container {padding: 0;margin: 0;width: 100vw;height: 100vh;max-width: 120vw;}
-    #     iframe {position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; border: none;}
-    #     </style>
-    #     """, unsafe_allow_html=True
-    # )
-    
-    file = st.sidebar.file_uploader("PDFファイルをアップロード", type="pdf")
+    files = st.sidebar.file_uploader("PDFファイルをアップロード", type="pdf", accept_multiple_files=True)
 
-    # 初期化処理
-    if 'ocr_result' not in st.session_state:
-        reset_session_state()
+    if files:
+        for i,file in enumerate(files):
+            # 初期化処理
+            if 'ocr_result' not in st.session_state:
+                reset_session_state()
 
-    process_pdf(file, my_company_name)
+            process_pdf(file, my_company_name)
 
-    with st.sidebar:
-        # PDFから抽出したテキストをエクスパンダーで表示
-        if st.session_state.ocr_result:
-            with st.expander("抽出されたテキストを表示"):
-                st.write(st.session_state.ocr_result)
+            with st.sidebar:
+                # PDFから抽出したテキストをエクスパンダーで表示
+                if st.session_state.ocr_result:
+                    with st.expander("抽出されたテキストを表示"):
+                        st.write(st.session_state.ocr_result)
 
-        # プルダウン形式で種類を選択
-        doc_type_options = ['見積書', '納品書', '請求書', 'その他']
-        selected_doc_type = st.selectbox(
-            "種類を選択", doc_type_options, index=doc_type_options.index(st.session_state.doc_type) if st.session_state.doc_type in doc_type_options else 0
-        )
-        st.session_state.doc_type = st.text_input("種類を手入力(オプション)", selected_doc_type)
+                # プルダウン形式で種類を選択
+                doc_type_options = ['見積書', '納品書', '請求書', 'その他']
+                selected_doc_type = st.selectbox(
+                    "種類を選択", 
+                    doc_type_options, 
+                    index=doc_type_options.index(st.session_state.doc_type) if st.session_state.doc_type in doc_type_options else 0
+                    )
+                st.session_state.doc_type = st.text_input("種類を手入力(オプション)", selected_doc_type)
 
-        # 会社名と発行日
-        st.session_state.company_name = st.text_input("取引先", st.session_state.company_name, key="company_name_input")
-        st.session_state.issue_date = st.text_input("発行日(YYMMDD形式)", st.session_state.issue_date, key="issue_date_input")
-        # st.session_state.total_amount = st.text_input("合計金額", st.session_state.total_amount, key="total_amount_input")
+                # 会社名と発行日
+                st.session_state.company_name = st.text_input("取引先", st.session_state.company_name, key="company_name_input")
+                st.session_state.issue_date = st.text_input("発行日(YYMMDD形式)", st.session_state.issue_date, key="issue_date_input")
+                # st.session_state.total_amount = st.text_input("合計金額", st.session_state.total_amount, key="total_amount_input")
 
-    handle_actions(file)
+                handle_actions(file)
+
+                if st.button("次のファイルへ", key=f"next_file_button_{i}"):
+                    reset_session_state()
+                    continue
+
 
     # リセットボタン
-    if st.sidebar.button("入力内容クリア"):
+    if st.sidebar.button("入力内容クリア", key="reset_button"):
         reset_session_state()
 
 main()
